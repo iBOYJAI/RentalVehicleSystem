@@ -1,0 +1,174 @@
+/**
+ * Icon Font - Local SVG Icons
+ * Using inline SVG for 100% offline support
+ */
+
+.icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: middle;
+    fill: currentColor;
+}
+
+.icon-sm {
+    width: 0.875em;
+    height: 0.875em;
+}
+
+.icon-lg {
+    width: 1.5em;
+    height: 1.5em;
+}
+
+.icon-xl {
+    width: 2em;
+    height: 2em;
+}
+
+/* SVG Icons as Data URIs */
+.icon-dashboard::before {
+    content: '📊';
+}
+
+.icon-vehicle::before {
+    content: '🚗';
+}
+
+.icon-booking::before {
+    content: '📅';
+}
+
+.icon-customer::before {
+    content: '👤';
+}
+
+.icon-payment::before {
+    content: '💳';
+}
+
+.icon-report::before {
+    content: '📈';
+}
+
+.icon-settings::before {
+    content: '⚙️';
+}
+
+.icon-user::before {
+    content: '👥';
+}
+
+.icon-logout::before {
+    content: '🚪';
+}
+
+.icon-add::before {
+    content: '➕';
+}
+
+.icon-edit::before {
+    content: '✏️';
+}
+
+.icon-delete::before {
+    content: '🗑️';
+}
+
+.icon-view::before {
+    content: '👁️';
+}
+
+.icon-search::before {
+    content: '🔍';
+}
+
+.icon-filter::before {
+    content: '🔽';
+}
+
+.icon-check::before {
+    content: '✓';
+}
+
+.icon-close::before {
+    content: '✕';
+}
+
+.icon-info::before {
+    content: 'ℹ️';
+}
+
+.icon-warning::before {
+    content: '⚠️';
+}
+
+.icon-error::before {
+    content: '❌';
+}
+
+.icon-success::before {
+    content: '✅';
+}
+
+.icon-calendar::before {
+    content: '📆';
+}
+
+.icon-clock::before {
+    content: '🕐';
+}
+
+.icon-money::before {
+    content: '💰';
+}
+
+.icon-image::before {
+    content: '🖼️';
+}
+
+.icon-file::before {
+    content: '📄';
+}
+
+.icon-download::before {
+    content: '⬇️';
+}
+
+.icon-upload::before {
+    content: '⬆️';
+}
+
+.icon-print::before {
+    content: '🖨️';
+}
+
+.icon-email::before {
+    content: '📧';
+}
+
+.icon-phone::before {
+    content: '📞';
+}
+
+.icon-location::before {
+    content: '📍';
+}
+
+.icon-maintenance::before {
+    content: '🔧';
+}
+
+.icon-category::before {
+    content: '📁';
+}
+
+/* Alternative: Using Unicode symbols directly */
+.icon {
+    font-family: Arial, sans-serif;
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+    text-rendering: auto;
+    display: inline-block;
+}

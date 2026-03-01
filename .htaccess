@@ -1,0 +1,17 @@
+# Enable error reporting (disable in production)
+# php_flag display_errors On
+# php_value error_reporting E_ALL
+
+# Prevent directory listing
+Options -Indexes
+
+# Default file
+DirectoryIndex index.php
+
+# URL Rewriting (if needed)
+# RewriteEngine On
+# RewriteBase /RentalVehicleSystem/
+# RewriteCond %{REQUEST_FILENAME} !-f
+# RewriteCond %{REQUEST_FILENAME} !-d
+# RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+

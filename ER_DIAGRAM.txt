@@ -1,0 +1,331 @@
+================================================================================
+DATABASE ER DIAGRAM DESCRIPTION
+Rental Vehicle Management System (RVMS)
+================================================================================
+
+This document describes the Entity-Relationship (ER) diagram and database 
+structure of the RVMS system.
+
+================================================================================
+ENTITIES (TABLES)
+================================================================================
+
+1. USERS
+   - Purpose: Stores all system users (Admin, Staff, Customers)
+   - Primary Key: id
+   - Attributes:
+     * id (INT, AUTO_INCREMENT)
+     * username (VARCHAR(50), UNIQUE)
+     * email (VARCHAR(100), UNIQUE)
+     * password (VARCHAR(255), HASHED)
+     * full_name (VARCHAR(100))
+     * role (ENUM: 'admin', 'staff', 'customer')
+     * phone (VARCHAR(20))
+     * address (TEXT)
+     * status (ENUM: 'active', 'inactive')
+     * created_at, updated_at (TIMESTAMP)
+
+2. CATEGORIES
+   - Purpose: Vehicle categories (Car, Bike, Van, Lorry, Bus)
+   - Primary Key: id
+   - Attributes:
+     * id (INT, AUTO_INCREMENT)
+     * name (VARCHAR(50), UNIQUE)
+     * description (TEXT)
+     * icon (VARCHAR(50))
+     * status (ENUM: 'active', 'inactive')
+     * created_at (TIMESTAMP)
+
+3. VEHICLES
+   - Purpose: Vehicle inventory and details
+   - Primary Key: id
+   - Foreign Keys: category_id -> categories.id
+   - Attributes:
+     * id (INT, AUTO_INCREMENT)
+     * category_id (INT, FK -> categories.id)
+     * vehicle_name (VARCHAR(100))
+     * brand, model, year, color
+     * registration_number (VARCHAR(50), UNIQUE)
+     * chassis_number, engine_number
+     * fuel_type (ENUM: 'petrol', 'diesel', 'electric', 'hybrid')
+     * seating_capacity (INT)
+     * daily_rate, weekly_rate, monthly_rate (DECIMAL)
+     * image (VARCHAR(255))
+     * description (TEXT)
+     * status (ENUM: 'available', 'rented', 'maintenance', 'inactive')
+     * mileage (INT)
+     * created_at, updated_at (TIMESTAMP)
+
+4. CUSTOMERS
+   - Purpose: Customer information and documents
+   - Primary Key: id
+   - Foreign Keys: user_id -> users.id (optional, nullable)
+   - Attributes:
+     * id (INT, AUTO_INCREMENT)
+     * user_id (INT, FK -> users.id, NULLABLE)
+     * customer_code (VARCHAR(20), UNIQUE)
+     * full_name (VARCHAR(100))
+     * email, phone, address
+     * license_number, license_expiry (DATE)
+     * id_proof, address_proof (VARCHAR(255), file paths)
+     * status (ENUM: 'active', 'inactive', 'blacklisted')
+     * created_at, updated_at (TIMESTAMP)
+
+5. BOOKINGS
+   - Purpose: Vehicle rental bookings
+   - Primary Key: id
+   - Foreign Keys: 
+     * customer_id -> customers.id
+     * vehicle_id -> vehicles.id
+     * approved_by -> users.id (nullable)
+   - Attributes:
+     * id (INT, AUTO_INCREMENT)
+     * booking_number (VARCHAR(20), UNIQUE)
+     * customer_id (INT, FK -> customers.id)
+     * vehicle_id (INT, FK -> vehicles.id)
+     * start_date, end_date (DATE)
+     * pickup_location, dropoff_location (VARCHAR(255))
+     * daily_rate, subtotal, discount, tax, total_amount (DECIMAL)
+     * total_days (INT)
+     * advance_payment (DECIMAL)
+     * status (ENUM: 'pending', 'approved', 'active', 'completed', 'cancelled', 'rejected')
+     * notes (TEXT)
+     * approved_by (INT, FK -> users.id, NULLABLE)
+     * approved_at (TIMESTAMP, NULLABLE)
+     * created_at, updated_at (TIMESTAMP)
+
+6. PAYMENTS
+   - Purpose: Payment transactions
+   - Primary Key: id
+   - Foreign Keys:
+     * booking_id -> bookings.id
+     * created_by -> users.id (nullable)
+   - Attributes:
+     * id (INT, AUTO_INCREMENT)
+     * payment_number (VARCHAR(20), UNIQUE)
+     * booking_id (INT, FK -> bookings.id)
+     * payment_type (ENUM: 'advance', 'full', 'partial', 'refund')
+     * amount (DECIMAL)
+     * payment_method (ENUM: 'cash', 'card', 'bank_transfer', 'online')
+     * payment_date (TIMESTAMP)
+     * status (ENUM: 'pending', 'completed', 'failed', 'refunded')
+     * transaction_id (VARCHAR(100))
+     * notes (TEXT)
+     * created_by (INT, FK -> users.id, NULLABLE)
+
+7. INVOICES
+   - Purpose: Invoice records
+   - Primary Key: id
+   - Foreign Keys:
+     * booking_id -> bookings.id
+     * customer_id -> customers.id
+   - Attributes:
+     * id (INT, AUTO_INCREMENT)
+     * invoice_number (VARCHAR(20), UNIQUE)
+     * booking_id (INT, FK -> bookings.id)
+     * customer_id (INT, FK -> customers.id)
+     * issue_date, due_date (DATE)
+     * subtotal, tax, discount, total_amount (DECIMAL)
+     * paid_amount (DECIMAL)
+     * status (ENUM: 'draft', 'sent', 'paid', 'overdue', 'cancelled')
+     * notes (TEXT)
+     * created_at (TIMESTAMP)
+
+8. MAINTENANCE
+   - Purpose: Vehicle maintenance and damage logs
+   - Primary Key: id
+   - Foreign Keys:
+     * vehicle_id -> vehicles.id
+     * booking_id -> bookings.id (nullable)
+     * created_by -> users.id (nullable)
+   - Attributes:
+     * id (INT, AUTO_INCREMENT)
+     * vehicle_id (INT, FK -> vehicles.id)
+     * booking_id (INT, FK -> bookings.id, NULLABLE)
+     * maintenance_type (ENUM: 'service', 'repair', 'damage', 'inspection', 'other')
+     * title (VARCHAR(255))
+     * description (TEXT)
+     * cost (DECIMAL)
+     * maintenance_date, completed_date (DATE)
+     * status (ENUM: 'pending', 'in_progress', 'completed', 'cancelled')
+     * service_provider (VARCHAR(100))
+     * next_service_date (DATE, NULLABLE)
+     * mileage_at_service (INT)
+     * created_by (INT, FK -> users.id, NULLABLE)
+     * created_at, updated_at (TIMESTAMP)
+
+9. SETTINGS
+   - Purpose: System configuration settings
+   - Primary Key: id
+   - Attributes:
+     * id (INT, AUTO_INCREMENT)
+     * setting_key (VARCHAR(100), UNIQUE)
+     * setting_value (TEXT)
+     * setting_type (VARCHAR(50))
+     * description (TEXT)
+     * updated_at (TIMESTAMP)
+
+================================================================================
+RELATIONSHIPS
+================================================================================
+
+1. CATEGORIES → VEHICLES (One-to-Many)
+   - One category can have many vehicles
+   - vehicles.category_id → categories.id
+   - Relationship: REQUIRED (NOT NULL)
+
+2. USERS → CUSTOMERS (One-to-One, Optional)
+   - One user can be linked to one customer record
+   - customers.user_id → users.id
+   - Relationship: OPTIONAL (NULLABLE)
+
+3. CUSTOMERS → BOOKINGS (One-to-Many)
+   - One customer can have many bookings
+   - bookings.customer_id → customers.id
+   - Relationship: REQUIRED (NOT NULL)
+
+4. VEHICLES → BOOKINGS (One-to-Many)
+   - One vehicle can have many bookings
+   - bookings.vehicle_id → vehicles.id
+   - Relationship: REQUIRED (NOT NULL)
+
+5. BOOKINGS → PAYMENTS (One-to-Many)
+   - One booking can have many payments
+   - payments.booking_id → bookings.id
+   - Relationship: REQUIRED (NOT NULL)
+
+6. BOOKINGS → INVOICES (One-to-One)
+   - One booking can have one invoice
+   - invoices.booking_id → bookings.id
+   - Relationship: REQUIRED (NOT NULL)
+
+7. CUSTOMERS → INVOICES (One-to-Many)
+   - One customer can have many invoices
+   - invoices.customer_id → customers.id
+   - Relationship: REQUIRED (NOT NULL)
+
+8. VEHICLES → MAINTENANCE (One-to-Many)
+   - One vehicle can have many maintenance records
+   - maintenance.vehicle_id → vehicles.id
+   - Relationship: REQUIRED (NOT NULL)
+
+9. BOOKINGS → MAINTENANCE (One-to-Many, Optional)
+   - One booking can have multiple maintenance records (for damages)
+   - maintenance.booking_id → bookings.id
+   - Relationship: OPTIONAL (NULLABLE)
+
+10. USERS → BOOKINGS (One-to-Many, Optional)
+    - One user (admin/staff) can approve many bookings
+    - bookings.approved_by → users.id
+    - Relationship: OPTIONAL (NULLABLE)
+
+11. USERS → PAYMENTS (One-to-Many, Optional)
+    - One user can create many payment records
+    - payments.created_by → users.id
+    - Relationship: OPTIONAL (NULLABLE)
+
+12. USERS → MAINTENANCE (One-to-Many, Optional)
+    - One user can create many maintenance records
+    - maintenance.created_by → users.id
+    - Relationship: OPTIONAL (NULLABLE)
+
+================================================================================
+INDEXES
+================================================================================
+
+PRIMARY INDEXES:
+- All tables have PRIMARY KEY on 'id' column
+
+UNIQUE INDEXES:
+- users.username
+- users.email
+- vehicles.registration_number
+- customers.customer_code
+- bookings.booking_number
+- payments.payment_number
+- invoices.invoice_number
+- categories.name
+- settings.setting_key
+
+FOREIGN KEY INDEXES:
+- vehicles.category_id
+- bookings.customer_id
+- bookings.vehicle_id
+- payments.booking_id
+- invoices.booking_id
+- invoices.customer_id
+- maintenance.vehicle_id
+
+SEARCH INDEXES:
+- users.role
+- vehicles.status
+- bookings.status
+- bookings.start_date, bookings.end_date (for availability checking)
+- payments.status
+- payments.payment_date
+- customers.status
+- maintenance.status
+- maintenance.maintenance_date
+
+================================================================================
+DATA FLOW
+================================================================================
+
+BOOKING WORKFLOW:
+1. Customer created/selected → customers table
+2. Vehicle selected → vehicles table
+3. Booking created → bookings table (status: 'pending')
+4. Admin/Staff approves → bookings.status = 'approved', vehicles.status = 'rented'
+5. Payment recorded → payments table
+6. Booking completed → bookings.status = 'completed', vehicles.status = 'available'
+7. Invoice generated → invoices table (optional)
+
+MAINTENANCE WORKFLOW:
+1. Maintenance needed → maintenance table created
+2. Vehicle status updated → vehicles.status = 'maintenance'
+3. Maintenance completed → maintenance.status = 'completed'
+4. Vehicle status updated → vehicles.status = 'available'
+
+================================================================================
+CONSTRAINTS
+================================================================================
+
+REFERENTIAL INTEGRITY:
+- All foreign keys use ON DELETE RESTRICT (except user_id which uses SET NULL)
+- Prevents deletion of parent records with child records
+
+DATA VALIDATION:
+- ENUM types ensure valid status values
+- UNIQUE constraints prevent duplicates
+- NOT NULL constraints ensure required fields
+
+CASCADE RULES:
+- When user is deleted, related customer.user_id is set to NULL
+- When booking is deleted, related payments are restricted (must delete payments first)
+- When vehicle is deleted, related bookings are restricted (must handle bookings first)
+
+================================================================================
+VIEWS
+================================================================================
+
+DASHBOARD_STATS VIEW:
+- Aggregates statistics for dashboard display
+- Calculates: available_vehicles, rented_vehicles, active_bookings, 
+  active_customers, today_revenue, month_revenue
+- Updated in real-time from base tables
+
+================================================================================
+SAMPLE DATA
+================================================================================
+
+The database includes sample data:
+- 2 default users (admin, staff)
+- 5 vehicle categories
+- 5 sample vehicles
+- 3 sample customers
+- System settings with default values
+
+================================================================================
+END OF ER DIAGRAM DESCRIPTION
+================================================================================
+
