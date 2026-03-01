@@ -24,7 +24,7 @@ Finally, I thank my friends, brothers, sister and parents for their moral suppor
 
 ### SYNOPSIS
 
-The **Rental Vehicle Management System (RVMS)** is a comprehensive software solution designed to automate the manual processes involved in vehicle rentals. The system manages vehicle inventory, customer records, booking schedules, and financial transactions. Developed using PHP and MySQL, it provides a secure, role-based environment for administrators and staff to efficiently handle day-to-day operations. Key features include real-time availability checks, automated billing, and detailed reporting, ensuring transparency and improving service delivery for the rental business.
+The **Rental Vehicle Management System (RVMS)** is a robust, features-rich application designed to digitize and automate the entire vehicle rental lifecycle. The system provides a centralized platform for managing a diverse vehicle fleet, customer documentation, complex booking schedules, and multi-stage financial transactions. Built on a purely offline architecture (using XAMPP), it ensures data privacy and high performance without relying on external CDNs. For the administrator, it offers a secure environment for role-based access, comprehensive reporting, and system-wide configuration, while for customers, it ensures a transparent and structured rental experience.
 
 ---
 
@@ -36,13 +36,14 @@ The **Rental Vehicle Management System (RVMS)** is a comprehensive software solu
 | 1.1 | ABOUT THE PROJECT | |
 | 1.2 | HARDWARE SPECIFICATION | |
 | 1.3 | SOFTWARE SPECIFICATION | |
-| **2.** | **SYSTEM ANALYSIS** | **8** |
+| **2.** | **SYSTEM ANALYSIS** | **4** |
 | 2.1 | PROBLEM DEFINITION | |
 | 2.2 | SYSTEM STUDY | |
 | 2.3 | PROPOSED SYSTEM | |
-| **3.** | **SYSTEM DESIGN** | **10** |
+| **3.** | **SYSTEM DESIGN** | **8** |
 | 3.1 | DATA FLOW DIAGRAM | |
-| 3.2 | MODULE SPECIFICATION | |
+| 3.2 | DATABASE TABLE STRUCTURE | |
+| 3.3 | MODULE SPECIFICATION | |
 | **4.** | **TESTING AND IMPLEMENTATION** | **15** |
 | **5.** | **CONCLUSION AND SUGGESTIONS** | **17** |
 | **6.** | **BIBLIOGRAPHY** | **19** |
@@ -54,63 +55,121 @@ The **Rental Vehicle Management System (RVMS)** is a comprehensive software solu
 ## CHAPTER 1: INTRODUCTION
 
 ### 1.1 ABOUT THE PROJECT
-The Rental Vehicle Management System is a web-based application that simplifies the management of a vehicle rental agency. It allows the administrator to maintain a database of vehicles, track their rental status, manage customer profiles, and generate reports on revenue and usage.
+The Rental Vehicle Management System (RVMS) is a comprehensive digital transformation project for small and medium-scale vehicle rental businesses. It replaces manual ledgers with a high-performance database, providing instant data retrieval and automated calculations.
 
 ### 1.2 HARDWARE SPECIFICATION
-- **Processor:** Intel Core i3 or equivalent (minimum)
-- **RAM:** 4GB (minimum)
-- **Storage:** 500MB available disk space
-- **Display:** 1024x768 resolution
+- **Processor:** Intel Core i3 / i5 / i7 or equivalent
+- **RAM:** 4GB (minimum), 8GB (recommended)
+- **Storage:** 500MB available disk space for system and database
+- **Display:** 1366x768 Standard resolution or higher
 
 ### 1.3 SOFTWARE SPECIFICATION
-- **Operating System:** Windows 10/11
-- **Server:** XAMPP (Apache, MySQL)
-- **Frontend:** HTML, CSS, JavaScript (Vanilla)
-- **Backend:** PHP 7.4+
-- **Database:** MySQL 5.7+
+- **Operating System:** Windows 10/11, macOS, Linux
+- **Local Server:** XAMPP (Apache, MySQL)
+- **Programming Languages:** PHP 7.4+ (Backend), JavaScript (Frontend)
+- **Markup & Styling:** HTML5, CSS3
 
 ---
 
 ## CHAPTER 2: SYSTEM ANALYSIS
 
 ### 2.1 PROBLEM DEFINITION
-Manual vehicle rental management is prone to errors in booking schedules, difficulty in tracking vehicle maintenance, and slow retrieval of customer history. The project aims to eliminate these inefficiencies through automation.
+The manual management of vehicle rentals suffers from several critical vulnerabilities:
+1.  **Scheduling Conflicts:** Risk of double-booking vehicles.
+2.  **Financial Errors:** Inconsistent rate calculations and manual invoice errors.
+3.  **Document Mismanagement:** Difficulty in tracking and verifying customer ID/License proofs.
+4.  **Reporting Delay:** Slow generation of revenue and fleet utilization summaries.
 
 ### 2.2 SYSTEM STUDY
-The current manual system involves physical registers for vehicle inventory and customer details. Finding a specific booking or calculating total revenue for a month is a time-consuming task.
+The present system involves manual entries for vehicle details and customer agreements. This leads to physical data storage challenges and slow response times for fleet availability inquiries.
 
 ### 2.3 PROPOSED SYSTEM
-The proposed system centralizes all data in a MySQL database. It provides instant search functionality, automated calculations, and secure data storage, reducing paperwork and human error.
+The RVMS provides a real-time, centralized database solution. It features:
+- **Instant Availability Checking:** Preventing booking overlaps.
+- **Role-Based Access:** Securing administrative functions.
+- **Automated Billing:** Generating professional invoices instantly.
+- **Visual Analytics:** Real-time revenue and status tracking via dashboards.
 
 ---
 
 ## CHAPTER 3: SYSTEM DESIGN
 
 ### 3.1 DATA FLOW DIAGRAM (DFD)
-- **Level 0 (Context Diagram):** Shows the interaction between the User (Admin/Staff) and the Rental System.
-- **Level 1:** Details the movement of data between processes like Authentication, Vehicle Management, Booking, and Payment.
+- **Context Level (Level 0):** Users interact with the System, which stores data in the Database.
+- **Level 1:** Detailed processes: Login ➔ Fleet Manage ➔ Booking Verify ➔ Payment Log ➔ Report Sync.
 
-### 3.2 MODULE SPECIFICATION
-- **Admin Module:** Full control over users, fleet, and system settings.
-- **Staff Module:** Handles vehicle bookings, payments, and customer records.
-- **Reports Module:** Generates analytics on business performance.
+### 3.2 DATABASE TABLE STRUCTURE
+
+#### Table 1: `users` (System Users)
+| Field | Type | Constraint |
+| :--- | :--- | :--- |
+| `id` | INT | PRIMARY KEY, AUTO_INCREMENT |
+| `username` | VARCHAR(50) | UNIQUE, NOT NULL |
+| `role` | ENUM | ('admin', 'staff', 'customer') |
+| `status` | ENUM | ('active', 'inactive') |
+
+#### Table 2: `vehicles` (Fleet Inventory)
+| Field | Type | Constraint |
+| :--- | :--- | :--- |
+| `id` | INT | PRIMARY KEY, AUTO_INCREMENT |
+| `category_id` | INT | FOREIGN KEY (categories.id) |
+| `reg_number` | VARCHAR(50) | UNIQUE, NOT NULL |
+| `status` | ENUM | (Available, Rented, Maintenance, Inactive) |
+
+#### Table 3: `bookings` (Transactions)
+| Field | Type | Constraint |
+| :--- | :--- | :--- |
+| `id` | INT | PRIMARY KEY, AUTO_INCREMENT |
+| `booking_no`| VARCHAR(20) | UNIQUE, NOT NULL |
+| `customer_id`| INT | FOREIGN KEY (customers.id) |
+| `vehicle_id` | INT | FOREIGN KEY (vehicles.id) |
+| `total_amt` | DECIMAL(10,2) | NOT NULL |
+
+---
+
+### 3.3 MODULE SPECIFICATION
+
+#### 1. AUTHENTICATION MODULE
+- **Secure Access:** Only authorized users can enter the system.
+- **Session Control:** Prevents unauthorized URL access without login.
+
+#### 2. VEHICLE MANAGEMENT
+- **Fleet Control:** CRUD operations for vehicles with registration and status tracking.
+- **Image Upload:** Local storage and validation of vehicle photos.
+
+#### 3. BOOKING & AVAILABILITY
+- **Date Check:** Ensuring vehicles are not booked for overlapping dates.
+- **Cost Engine:** Automatically calculating daily/weekly/monthly rental totals.
+
+#### 4. PAYMENT & INVOICING
+- **Transaction Logs:** Recording advance and full payments.
+- **Invoice Generation:** Structure for professional, unique invoice numbers.
+
+#### 5. REPORTS & ANALYTICS
+- **Dashboard Stats:** High-level summary of business performance.
+- **Periodic Reports:** Filtering revenue by day, week, or month.
 
 ---
 
 ## CHAPTER 4: TESTING AND IMPLEMENTATION
-The system underwent rigorous unit testing for each module (Login, Booking, Payments). Integration testing ensured that vehicle availability is correctly updated across the database after each booking.
+
+The implementation followed the **Waterfall Life Cycle Model**.
+- **Unit Testing:** Individual forms (add vehicle, customer registration) were tested for input validation.
+- **Integration Testing:** Verified that booking a vehicle successfully changes its status from 'Available' to 'Rented'.
+- **System Testing:** The entire deployment structure on XAMPP was verified for offline performance.
 
 ---
 
 ## CHAPTER 5: CONCLUSION AND SUGGESTIONS
-The Rental Vehicle Management System successfully automates the rental lifecycle. Future enhancements could include GPS tracking integration and online payment gateway connectivity.
+The **Rental Vehicle Management System** fulfills all requirements for a professional rental management tool. It optimizes operational efficiency and ensures data security.
+**Suggestions:** Future versions can integrate SMS gateways for booking confirmation and a GPS-based tracking module for the fleet.
 
 ---
 
 ## CHAPTER 6: BIBLIOGRAPHY
-1. PHP and MySQL for Dynamic Web Sites - Larry Ullman
-2. Head First PHP & MySQL - Lynn Beighley & Michael Morrison
-3. W3Schools PHP Tutorial (online documentation)
+1. Ullman, Larry. "PHP and MySQL for Dynamic Web Sites". Peachpit Press.
+2. Beighley, Lynn. "Head First PHP & MySQL". O'Reilly Media.
+3. Official PHP Documentation (php.net).
 
 ---
 
