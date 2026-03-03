@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Dashboard Page
  * Main dashboard with statistics and charts
@@ -82,7 +83,7 @@ if ($isCustomer) {
     // Admin/Staff dashboard with full system-wide statistics
     try {
         $stats = $db->query("SELECT * FROM dashboard_stats")->fetch();
-        
+
         // Get recent bookings
         $recentBookings = $db->query("
             SELECT b.*, v.vehicle_name, v.registration_number, c.full_name as customer_name
@@ -92,7 +93,7 @@ if ($isCustomer) {
             ORDER BY b.created_at DESC
             LIMIT 5
         ")->fetchAll();
-        
+
         // Get revenue data for chart (last 7 days)
         $revenueData = $db->query("
             SELECT DATE(created_at) as date, COALESCE(SUM(total_amount), 0) as revenue
@@ -102,14 +103,14 @@ if ($isCustomer) {
             GROUP BY DATE(created_at)
             ORDER BY date ASC
         ")->fetchAll();
-        
+
         // Get vehicle status distribution
         $vehicleStatus = $db->query("
             SELECT status, COUNT(*) as count
             FROM vehicles
             GROUP BY status
         ")->fetchAll();
-        
+
         // Get top rented vehicles
         $topVehicles = $db->query("
             SELECT v.vehicle_name, v.registration_number, COUNT(b.id) as booking_count
@@ -119,8 +120,7 @@ if ($isCustomer) {
             ORDER BY booking_count DESC
             LIMIT 5
         ")->fetchAll();
-        
-    } catch(PDOException $e) {
+    } catch (PDOException $e) {
         error_log("Dashboard Error: " . $e->getMessage());
         $stats = ['available_vehicles' => 0, 'rented_vehicles' => 0, 'active_bookings' => 0, 'active_customers' => 0, 'today_revenue' => 0, 'month_revenue' => 0];
         $recentBookings = [];
@@ -175,7 +175,7 @@ if ($successMsg): ?>
             <div class="stat-value"><?php echo number_format($stats['my_active_bookings']); ?></div>
             <div class="stat-label">My Active Bookings</div>
         </div>
-        
+
         <div class="stat-card success">
             <div class="stat-icon">
                 <i class="icon icon-booking"></i>
@@ -183,7 +183,7 @@ if ($successMsg): ?>
             <div class="stat-value"><?php echo number_format($stats['my_total_bookings']); ?></div>
             <div class="stat-label">My Total Bookings</div>
         </div>
-        
+
         <div class="stat-card info">
             <div class="stat-icon">
                 <i class="icon icon-money"></i>
@@ -226,11 +226,9 @@ if ($successMsg): ?>
                                         <td><?php echo formatDate($booking['start_date']); ?> - <?php echo formatDate($booking['end_date']); ?></td>
                                         <td><?php echo formatCurrency($booking['total_amount']); ?></td>
                                         <td>
-                                            <span class="badge badge-<?php 
-                                                echo $booking['status'] === 'approved' ? 'success' : 
-                                                    ($booking['status'] === 'pending' ? 'warning' : 
-                                                    ($booking['status'] === 'active' ? 'info' : 'secondary')); 
-                                            ?>">
+                                            <span class="badge badge-<?php
+                                                                        echo $booking['status'] === 'approved' ? 'success' : ($booking['status'] === 'pending' ? 'warning' : ($booking['status'] === 'active' ? 'info' : 'secondary'));
+                                                                        ?>">
                                                 <?php echo ucfirst($booking['status']); ?>
                                             </span>
                                         </td>
@@ -254,7 +252,7 @@ if ($successMsg): ?>
             <div class="stat-value"><?php echo number_format($stats['available_vehicles']); ?></div>
             <div class="stat-label">Available Vehicles</div>
         </div>
-        
+
         <div class="stat-card success">
             <div class="stat-icon">
                 <i class="icon icon-booking"></i>
@@ -262,7 +260,7 @@ if ($successMsg): ?>
             <div class="stat-value"><?php echo number_format($stats['active_bookings']); ?></div>
             <div class="stat-label">Active Bookings</div>
         </div>
-        
+
         <div class="stat-card warning">
             <div class="stat-icon">
                 <i class="icon icon-customer"></i>
@@ -270,7 +268,7 @@ if ($successMsg): ?>
             <div class="stat-value"><?php echo number_format($stats['active_customers']); ?></div>
             <div class="stat-label">Active Customers</div>
         </div>
-        
+
         <div class="stat-card info">
             <div class="stat-icon">
                 <i class="icon icon-money"></i>
@@ -278,7 +276,15 @@ if ($successMsg): ?>
             <div class="stat-value"><?php echo formatCurrency($stats['today_revenue']); ?></div>
             <div class="stat-label">Today's Revenue</div>
         </div>
-        
+
+        <div class="stat-card danger">
+            <div class="stat-icon">
+                <i class="icon icon-invoice"></i>
+            </div>
+            <div class="stat-value"><?php echo number_format($stats['pending_invoices']); ?></div>
+            <div class="stat-label">Pending Invoices</div>
+        </div>
+
         <div class="stat-card success">
             <div class="stat-icon">
                 <i class="icon icon-money"></i>
@@ -286,7 +292,7 @@ if ($successMsg): ?>
             <div class="stat-value"><?php echo formatCurrency($stats['month_revenue']); ?></div>
             <div class="stat-label">Monthly Revenue</div>
         </div>
-        
+
         <div class="stat-card danger">
             <div class="stat-icon">
                 <i class="icon icon-vehicle"></i>
@@ -304,13 +310,13 @@ if ($successMsg): ?>
                 <h3 class="card-title">Revenue Trend (Last 7 Days)</h3>
             </div>
             <div class="card-body">
-                <canvas id="revenueChart" width="400" height="200" 
-                        data-chart="line"
-                        data-chart-data='{"labels": <?php echo json_encode($chartLabels); ?>, "datasets": [{"label": "Revenue", "data": <?php echo json_encode($chartRevenue); ?>, "borderColor": "#6366f1", "backgroundColor": "rgba(99, 102, 241, 0.1)"}]}'>
+                <canvas id="revenueChart" width="400" height="200"
+                    data-chart="bar"
+                    data-chart-data='{"labels": <?php echo json_encode($chartLabels); ?>, "datasets": [{"label": "Revenue", "data": <?php echo json_encode($chartRevenue); ?>, "borderColor": "#6366f1", "backgroundColor": "rgba(99, 102, 241, 0.8)"}]}'>
                 </canvas>
             </div>
         </div>
-        
+
         <!-- Vehicle Status Chart -->
         <div class="card">
             <div class="card-header">
@@ -318,8 +324,8 @@ if ($successMsg): ?>
             </div>
             <div class="card-body">
                 <canvas id="vehicleStatusChart" width="300" height="200"
-                        data-chart="doughnut"
-                        data-chart-data='{"labels": <?php echo json_encode($vehicleStatusLabels); ?>, "datasets": [{"data": <?php echo json_encode($vehicleStatusData); ?>, "backgroundColor": ["#6366f1", "#10b981", "#f59e0b", "#ef4444"]}]}'>
+                    data-chart="doughnut"
+                    data-chart-data='{"labels": <?php echo json_encode($vehicleStatusLabels); ?>, "datasets": [{"data": <?php echo json_encode($vehicleStatusData); ?>, "backgroundColor": ["#6366f1", "#10b981", "#f59e0b", "#ef4444"]}]}'>
                 </canvas>
             </div>
         </div>
@@ -370,7 +376,7 @@ if ($successMsg): ?>
                 <?php endif; ?>
             </div>
         </div>
-        
+
         <!-- Top Vehicles -->
         <div class="card">
             <div class="card-header">
@@ -404,4 +410,3 @@ if ($successMsg): ?>
 <?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>
-

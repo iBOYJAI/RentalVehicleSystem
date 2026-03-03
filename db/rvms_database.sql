@@ -131,6 +131,7 @@ CREATE TABLE IF NOT EXISTS payments (
     transaction_id VARCHAR(100),
     notes TEXT,
     created_by INT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE RESTRICT,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_booking (booking_id),
@@ -152,9 +153,10 @@ CREATE TABLE IF NOT EXISTS invoices (
     discount DECIMAL(10, 2) DEFAULT 0,
     total_amount DECIMAL(10, 2) NOT NULL,
     paid_amount DECIMAL(10, 2) DEFAULT 0,
-    status ENUM('draft', 'sent', 'paid', 'overdue', 'cancelled') DEFAULT 'draft',
+    status ENUM('draft', 'sent', 'partially_paid', 'paid', 'overdue', 'cancelled') DEFAULT 'draft',
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE RESTRICT,
     FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE RESTRICT,
     INDEX idx_invoice_number (invoice_number),
@@ -199,6 +201,18 @@ CREATE TABLE IF NOT EXISTS settings (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- System Logs Table for Automation Tracking
+CREATE TABLE IF NOT EXISTS system_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    log_type VARCHAR(50) NOT NULL,
+    action VARCHAR(255) NOT NULL,
+    reference_id VARCHAR(50),
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_log_type (log_type),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Insert Default Admin User
 -- NOTE: Default password is "password" for both admin and staff accounts
 -- IMPORTANT: Change passwords immediately after first login via Settings page
@@ -238,17 +252,33 @@ INSERT INTO settings (setting_key, setting_value, setting_type, description) VAL
 ('company_phone', '+1 234 567 8900', 'text', 'Company Phone'),
 ('company_email', 'info@rvms.com', 'email', 'Company Email'),
 ('tax_rate', '10', 'number', 'Tax Rate Percentage'),
-('currency', 'USD', 'text', 'Currency Code'),
+('currency', 'INR', 'text', 'Currency Code'),
 ('invoice_prefix', 'INV-', 'text', 'Invoice Number Prefix'),
 ('booking_prefix', 'BK-', 'text', 'Booking Number Prefix');
 
--- Create Views for Dashboard Statistics
+-- Create Views for Dashboard and Reconciliation
 CREATE OR REPLACE VIEW dashboard_stats AS
 SELECT 
     (SELECT COUNT(*) FROM vehicles WHERE status = 'available') as available_vehicles,
     (SELECT COUNT(*) FROM vehicles WHERE status = 'rented') as rented_vehicles,
     (SELECT COUNT(*) FROM bookings WHERE status IN ('pending', 'approved', 'active')) as active_bookings,
     (SELECT COUNT(*) FROM customers WHERE status = 'active') as active_customers,
+    (SELECT COUNT(*) FROM invoices WHERE status IN ('sent', 'partially_paid')) as pending_invoices,
     (SELECT COALESCE(SUM(total_amount), 0) FROM bookings WHERE DATE(created_at) = CURDATE()) as today_revenue,
     (SELECT COALESCE(SUM(total_amount), 0) FROM bookings WHERE MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())) as month_revenue;
+
+-- Reconciliation View: Highlights mismatches between Invoices and actually completed Payments
+CREATE OR REPLACE VIEW payment_reconciliation AS
+SELECT 
+    i.invoice_number,
+    b.booking_number,
+    c.full_name as customer_name,
+    i.total_amount as invoice_amount,
+    i.paid_amount as invoice_recorded_paid,
+    (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.booking_id = i.booking_id AND p.status = 'completed') as actual_payments_sum,
+    (i.total_amount - (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.booking_id = i.booking_id AND p.status = 'completed')) as balance_mismatch,
+    i.status as invoice_status
+FROM invoices i
+JOIN bookings b ON i.booking_id = b.id
+JOIN customers c ON i.customer_id = c.id;
 

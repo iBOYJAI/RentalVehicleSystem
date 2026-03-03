@@ -1,4 +1,5 @@
 <?php
+
 /**
  * General Helper Functions
  * Common utility functions used throughout the application
@@ -11,7 +12,8 @@ require_once __DIR__ . '/config.php';
  * @param mixed $data
  * @return mixed
  */
-function sanitize($data) {
+function sanitize($data)
+{
     if (is_array($data)) {
         return array_map('sanitize', $data);
     }
@@ -23,7 +25,8 @@ function sanitize($data) {
  * @param string $email
  * @return bool
  */
-function isValidEmail($email) {
+function isValidEmail($email)
+{
     return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
 }
 
@@ -33,7 +36,8 @@ function isValidEmail($email) {
  * @param string $format
  * @return string
  */
-function formatDate($date, $format = DISPLAY_DATE_FORMAT) {
+function formatDate($date, $format = DISPLAY_DATE_FORMAT)
+{
     if (empty($date) || $date === '0000-00-00') {
         return '-';
     }
@@ -46,7 +50,8 @@ function formatDate($date, $format = DISPLAY_DATE_FORMAT) {
  * @param string|null $currency Optional currency code (e.g. USD, INR). If null, use system setting.
  * @return string
  */
-function formatCurrency($amount, $currency = null) {
+function formatCurrency($amount, $currency = null)
+{
     // Get currency from settings if not provided
     if ($currency === null) {
         if (!function_exists('getSetting')) {
@@ -72,7 +77,7 @@ function formatCurrency($amount, $currency = null) {
         case 'GBP':
             $symbol = '£';
             break;
-        // Add more as needed
+            // Add more as needed
     }
 
     return $symbol . ' ' . number_format((float)$amount, 2);
@@ -85,11 +90,12 @@ function formatCurrency($amount, $currency = null) {
  * @param string $column
  * @return string
  */
-function generateUniqueCode($prefix, $table, $column) {
+function generateUniqueCode($prefix, $table, $column)
+{
     $db = getDB();
     $code = '';
     $exists = true;
-    
+
     while ($exists) {
         $code = $prefix . strtoupper(substr(uniqid(), -8));
         $stmt = $db->prepare("SELECT COUNT(*) as count FROM {$table} WHERE {$column} = ?");
@@ -97,7 +103,7 @@ function generateUniqueCode($prefix, $table, $column) {
         $result = $stmt->fetch();
         $exists = $result['count'] > 0;
     }
-    
+
     return $code;
 }
 
@@ -110,18 +116,19 @@ function generateUniqueCode($prefix, $table, $column) {
  * @param float $taxRate
  * @return array
  */
-function calculateRentalCost($dailyRate, $startDate, $endDate, $discount = 0, $taxRate = 10) {
+function calculateRentalCost($dailyRate, $startDate, $endDate, $discount = 0, $taxRate = 10)
+{
     $start = new DateTime($startDate);
     $end = new DateTime($endDate);
     $interval = $start->diff($end);
     $totalDays = $interval->days + 1; // Include both start and end dates
-    
+
     $subtotal = $dailyRate * $totalDays;
     $discountAmount = ($subtotal * $discount) / 100;
     $afterDiscount = $subtotal - $discountAmount;
     $taxAmount = ($afterDiscount * $taxRate) / 100;
     $totalAmount = $afterDiscount + $taxAmount;
-    
+
     return [
         'total_days' => $totalDays,
         'daily_rate' => $dailyRate,
@@ -140,9 +147,10 @@ function calculateRentalCost($dailyRate, $startDate, $endDate, $discount = 0, $t
  * @param int $excludeBookingId
  * @return bool
  */
-function checkVehicleAvailability($vehicleId, $startDate, $endDate, $excludeBookingId = null) {
+function checkVehicleAvailability($vehicleId, $startDate, $endDate, $excludeBookingId = null)
+{
     $db = getDB();
-    
+
     $sql = "SELECT COUNT(*) as count FROM bookings 
             WHERE vehicle_id = ? 
             AND status IN ('approved', 'active') 
@@ -151,18 +159,18 @@ function checkVehicleAvailability($vehicleId, $startDate, $endDate, $excludeBook
                 (start_date <= ? AND end_date >= ?) OR
                 (start_date >= ? AND end_date <= ?)
             )";
-    
+
     $params = [$vehicleId, $startDate, $startDate, $endDate, $endDate, $startDate, $endDate];
-    
+
     if ($excludeBookingId) {
         $sql .= " AND id != ?";
         $params[] = $excludeBookingId;
     }
-    
+
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
     $result = $stmt->fetch();
-    
+
     return $result['count'] == 0;
 }
 
@@ -173,39 +181,40 @@ function checkVehicleAvailability($vehicleId, $startDate, $endDate, $excludeBook
  * @param array $allowedTypes
  * @return array ['success' => bool, 'message' => string, 'filename' => string|null]
  */
-function uploadFile($file, $directory = 'general', $allowedTypes = ALLOWED_IMAGE_TYPES) {
+function uploadFile($file, $directory = 'general', $allowedTypes = ALLOWED_IMAGE_TYPES)
+{
     if (!isset($file['error']) || is_array($file['error'])) {
         return ['success' => false, 'message' => 'Invalid file upload.', 'filename' => null];
     }
-    
+
     if ($file['error'] !== UPLOAD_ERR_OK) {
         return ['success' => false, 'message' => 'File upload error.', 'filename' => null];
     }
-    
+
     if ($file['size'] > MAX_FILE_SIZE) {
         return ['success' => false, 'message' => 'File size exceeds maximum limit.', 'filename' => null];
     }
-    
+
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     $mimeType = $finfo->file($file['tmp_name']);
-    
+
     if (!in_array($mimeType, $allowedTypes)) {
         return ['success' => false, 'message' => 'Invalid file type.', 'filename' => null];
     }
-    
+
     $uploadDir = UPLOAD_PATH . $directory . DIRECTORY_SEPARATOR;
     if (!is_dir($uploadDir)) {
         mkdir($uploadDir, 0755, true);
     }
-    
+
     $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
     $filename = uniqid() . '_' . time() . '.' . $extension;
     $filepath = $uploadDir . $filename;
-    
+
     if (!move_uploaded_file($file['tmp_name'], $filepath)) {
         return ['success' => false, 'message' => 'Failed to move uploaded file.', 'filename' => null];
     }
-    
+
     return ['success' => true, 'message' => 'File uploaded successfully.', 'filename' => $filename];
 }
 
@@ -215,11 +224,12 @@ function uploadFile($file, $directory = 'general', $allowedTypes = ALLOWED_IMAGE
  * @param string $directory
  * @return bool
  */
-function deleteFile($filename, $directory = 'general') {
+function deleteFile($filename, $directory = 'general')
+{
     if (empty($filename)) {
         return true;
     }
-    
+
     $filepath = UPLOAD_PATH . $directory . DIRECTORY_SEPARATOR . $filename;
     if (file_exists($filepath)) {
         return unlink($filepath);
@@ -233,7 +243,8 @@ function deleteFile($filename, $directory = 'general') {
  * @param string $directory
  * @return string
  */
-function getFileUrl($filename, $directory = 'general') {
+function getFileUrl($filename, $directory = 'general')
+{
     if (empty($filename)) {
         return ASSETS_URL . 'images/no-image.png';
     }
@@ -245,7 +256,8 @@ function getFileUrl($filename, $directory = 'general') {
  * @param string $type success|error|warning|info
  * @param string $message
  */
-function setFlashMessage($type, $message) {
+function setFlashMessage($type, $message)
+{
     $_SESSION['flash_' . $type] = $message;
 }
 
@@ -254,7 +266,8 @@ function setFlashMessage($type, $message) {
  * @param string $type
  * @return string|null
  */
-function getFlashMessage($type) {
+function getFlashMessage($type)
+{
     if (isset($_SESSION['flash_' . $type])) {
         $message = $_SESSION['flash_' . $type];
         unset($_SESSION['flash_' . $type]);
@@ -269,7 +282,8 @@ function getFlashMessage($type) {
  * @param string $type
  * @param string $message
  */
-function redirect($url, $type = null, $message = null) {
+function redirect($url, $type = null, $message = null)
+{
     if ($type && $message) {
         setFlashMessage($type, $message);
     }
@@ -284,11 +298,12 @@ function redirect($url, $type = null, $message = null) {
  * @param int $itemsPerPage
  * @return array
  */
-function getPagination($currentPage, $totalItems, $itemsPerPage = ITEMS_PER_PAGE) {
+function getPagination($currentPage, $totalItems, $itemsPerPage = ITEMS_PER_PAGE)
+{
     $totalPages = ceil($totalItems / $itemsPerPage);
     $currentPage = max(1, min($currentPage, $totalPages));
     $offset = ($currentPage - 1) * $itemsPerPage;
-    
+
     return [
         'current_page' => $currentPage,
         'total_pages' => $totalPages,
@@ -306,14 +321,15 @@ function getPagination($currentPage, $totalItems, $itemsPerPage = ITEMS_PER_PAGE
  * @param mixed $default
  * @return mixed
  */
-function getSetting($key, $default = null) {
+function getSetting($key, $default = null)
+{
     $db = getDB();
     try {
         $stmt = $db->prepare("SELECT setting_value FROM settings WHERE setting_key = ? LIMIT 1");
         $stmt->execute([$key]);
         $result = $stmt->fetch();
         return $result ? $result['setting_value'] : $default;
-    } catch(PDOException $e) {
+    } catch (PDOException $e) {
         error_log("Get Setting Error: " . $e->getMessage());
         return $default;
     }
@@ -325,15 +341,59 @@ function getSetting($key, $default = null) {
  * @param mixed $value
  * @return bool
  */
-function setSetting($key, $value) {
+function setSetting($key, $value)
+{
     $db = getDB();
     try {
         $stmt = $db->prepare("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) 
                               ON DUPLICATE KEY UPDATE setting_value = ?, updated_at = CURRENT_TIMESTAMP");
         return $stmt->execute([$key, $value, $value]);
-    } catch(PDOException $e) {
+    } catch (PDOException $e) {
         error_log("Set Setting Error: " . $e->getMessage());
         return false;
     }
 }
 
+/**
+ * Sync Invoice status based on payments
+ * @param int $bookingId
+ * @return bool
+ */
+function syncInvoiceStatus($bookingId)
+{
+    $db = getDB();
+    try {
+        // Calculate total successful payments for this booking
+        $stmt = $db->prepare("SELECT SUM(amount) as total_paid FROM payments WHERE booking_id = ? AND status = 'completed'");
+        $stmt->execute([$bookingId]);
+        $totalPaid = (float)($stmt->fetch()['total_paid'] ?? 0);
+
+        // Get invoice details
+        $stmt = $db->prepare("SELECT id, total_amount, status FROM invoices WHERE booking_id = ? LIMIT 1");
+        $stmt->execute([$bookingId]);
+        $invoice = $stmt->fetch();
+
+        if ($invoice) {
+            $newStatus = $invoice['status'];
+            if ($totalPaid >= $invoice['total_amount']) {
+                $newStatus = 'paid';
+            } elseif ($totalPaid > 0) {
+                $newStatus = 'partially_paid';
+            } else {
+                $newStatus = 'sent';
+            }
+
+            // Update invoice
+            $update = $db->prepare("UPDATE invoices SET paid_amount = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+            $update->execute([$totalPaid, $newStatus, $invoice['id']]);
+
+            // Log the action
+            $log = $db->prepare("INSERT INTO system_logs (log_type, action, reference_id, description) VALUES ('AUTOMATION', 'Sync Invoice Status', ?, ?)");
+            $log->execute([$invoice['id'], "Synced status to '$newStatus' with total paid: $totalPaid"]);
+        }
+        return true;
+    } catch (PDOException $e) {
+        error_log("Sync Invoice Error: " . $e->getMessage());
+        return false;
+    }
+}

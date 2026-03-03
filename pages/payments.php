@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Payments Management Page
  */
@@ -20,22 +21,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $paymentType = sanitize($_POST['payment_type']);
                 $paymentMethod = sanitize($_POST['payment_method']);
                 $notes = sanitize($_POST['notes'] ?? '');
-                
+
                 $paymentNumber = generateUniqueCode('PAY-', 'payments', 'payment_number');
-                
+
                 try {
-                    $stmt = $db->prepare("INSERT INTO payments (payment_number, booking_id, payment_type, amount, payment_method, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                    $db->beginTransaction();
+
+                    $stmt = $db->prepare("INSERT INTO payments (payment_number, booking_id, payment_type, amount, payment_method, status, notes, created_by) VALUES (?, ?, ?, ?, ?, 'completed', ?, ?)");
                     $stmt->execute([$paymentNumber, $bookingId, $paymentType, $amount, $paymentMethod, $notes, $_SESSION['user_id']]);
-                    
+
                     // Update booking advance payment if advance type
                     if ($paymentType === 'advance') {
                         $db->prepare("UPDATE bookings SET advance_payment = advance_payment + ? WHERE id = ?")->execute([$amount, $bookingId]);
                     }
-                    
-                    setFlashMessage('success', 'Payment recorded!');
+
+                    // Automated Workflow: Sync invoice status and amounts
+                    syncInvoiceStatus($bookingId);
+
+                    $db->commit();
+
+                    setFlashMessage('success', 'Payment recorded and invoice synced!');
                     header('Location: ' . BASE_URL . 'pages/payments.php');
                     exit;
-                } catch(PDOException $e) {
+                } catch (PDOException $e) {
+                    if ($db->inTransaction()) $db->rollBack();
                     setFlashMessage('error', 'Error: ' . $e->getMessage());
                 }
                 break;
@@ -108,7 +117,7 @@ if ($successMsg): ?>
         <div class="card-body">
             <form method="POST">
                 <input type="hidden" name="action" value="add">
-                
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-lg);">
                     <div class="form-group">
                         <label class="form-label required" for="booking_id">Booking</label>
@@ -121,7 +130,7 @@ if ($successMsg): ?>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label required" for="payment_type">Payment Type</label>
                         <select class="form-control" id="payment_type" name="payment_type" required>
@@ -130,12 +139,12 @@ if ($successMsg): ?>
                             <option value="full">Full Payment</option>
                         </select>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label required" for="amount">Amount</label>
                         <input type="number" class="form-control" id="amount" name="amount" step="0.01" min="0" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label required" for="payment_method">Payment Method</label>
                         <select class="form-control" id="payment_method" name="payment_method" required>
@@ -145,13 +154,13 @@ if ($successMsg): ?>
                             <option value="online">Online</option>
                         </select>
                     </div>
-                    
+
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label class="form-label" for="notes">Notes</label>
                         <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
                     </div>
                 </div>
-                
+
                 <div class="card-footer">
                     <a href="<?php echo BASE_URL; ?>pages/payments.php" class="btn btn-secondary">Cancel</a>
                     <button type="submit" class="btn btn-primary">Record Payment</button>
@@ -181,7 +190,7 @@ if ($successMsg): ?>
                 <button type="submit" class="btn btn-primary">Filter</button>
                 <a href="<?php echo BASE_URL; ?>pages/payments.php" class="btn btn-secondary">Reset</a>
             </form>
-            
+
             <div class="table-container" style="margin-top: var(--spacing-lg);">
                 <table class="table">
                     <thead>
@@ -222,7 +231,7 @@ if ($successMsg): ?>
                     </tbody>
                 </table>
             </div>
-            
+
             <?php if ($pagination['total_pages'] > 1): ?>
                 <div class="pagination">
                     <?php if ($pagination['has_prev']): ?>
@@ -245,4 +254,3 @@ if ($successMsg): ?>
 <?php endif; ?>
 
 <?php include '../includes/footer.php'; ?>
-

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Invoice View/Print Page
  */
@@ -14,13 +15,11 @@ $id = intval($_GET['id'] ?? 0);
 $invoice = $db->prepare("
     SELECT i.*, b.booking_number, b.start_date, b.end_date, b.total_days,
            v.vehicle_name, v.registration_number,
-           c.full_name as customer_name, c.phone as customer_phone, c.email as customer_email, c.address as customer_address,
-           comp.name as company_name, comp.address as company_address, comp.phone as company_phone, comp.email as company_email
+           c.full_name as customer_name, c.phone as customer_phone, c.email as customer_email, c.address as customer_address
     FROM invoices i
     JOIN bookings b ON i.booking_id = b.id
     JOIN vehicles v ON b.vehicle_id = v.id
     JOIN customers c ON i.customer_id = c.id
-    LEFT JOIN settings comp ON comp.setting_key = 'company_name'
     WHERE i.id = ?
 ");
 $invoice->execute([$id]);
@@ -40,6 +39,7 @@ $currency = getSetting('currency', 'INR');
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -47,10 +47,19 @@ $currency = getSetting('currency', 'INR');
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/style.css">
     <style>
         @media print {
-            .no-print { display: none; }
-            body { background: white; }
-            .invoice-container { box-shadow: none; }
+            .no-print {
+                display: none;
+            }
+
+            body {
+                background: white;
+            }
+
+            .invoice-container {
+                box-shadow: none;
+            }
         }
+
         .invoice-container {
             max-width: 800px;
             margin: 0 auto;
@@ -58,6 +67,7 @@ $currency = getSetting('currency', 'INR');
             padding: 40px;
             box-shadow: var(--shadow-lg);
         }
+
         .invoice-header {
             display: flex;
             justify-content: space-between;
@@ -65,60 +75,73 @@ $currency = getSetting('currency', 'INR');
             padding-bottom: 20px;
             border-bottom: 2px solid var(--border-color);
         }
+
         .invoice-title {
             font-size: 2.5rem;
             font-weight: 700;
             color: var(--primary-color);
         }
+
         .invoice-meta {
             text-align: right;
         }
+
         .invoice-body {
             margin-bottom: 40px;
         }
+
         .invoice-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 40px;
             margin-bottom: 30px;
         }
+
         .invoice-section h3 {
             margin-bottom: 15px;
             color: var(--text-primary);
             font-size: 1.1rem;
         }
+
         .invoice-table {
             width: 100%;
             border-collapse: collapse;
             margin: 30px 0;
         }
+
         .invoice-table th,
         .invoice-table td {
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
         }
+
         .invoice-table th {
             background: var(--bg-tertiary);
             font-weight: 600;
         }
+
         .invoice-totals {
             margin-top: 20px;
             text-align: right;
         }
+
         .invoice-totals table {
             width: 300px;
             margin-left: auto;
         }
+
         .invoice-totals td {
             padding: 8px 12px;
         }
+
         .invoice-totals .total-row {
             font-weight: 700;
             font-size: 1.2rem;
             border-top: 2px solid var(--primary-color);
             color: var(--primary-color);
         }
+
         .invoice-footer {
             margin-top: 40px;
             padding-top: 20px;
@@ -129,6 +152,7 @@ $currency = getSetting('currency', 'INR');
         }
     </style>
 </head>
+
 <body>
     <div class="invoice-container">
         <div class="no-print" style="margin-bottom: 20px;">
@@ -137,7 +161,7 @@ $currency = getSetting('currency', 'INR');
                 <i class="icon icon-print"></i> Print Invoice
             </button>
         </div>
-        
+
         <div class="invoice-header">
             <div>
                 <div class="invoice-title">INVOICE</div>
@@ -149,17 +173,15 @@ $currency = getSetting('currency', 'INR');
                     <div><strong>Due Date:</strong> <?php echo formatDate($invoice['due_date']); ?></div>
                 <?php endif; ?>
                 <div style="margin-top: 10px;">
-                    <span class="badge badge-<?php 
-                        echo $invoice['status'] === 'paid' ? 'success' : 
-                            ($invoice['status'] === 'overdue' ? 'danger' : 
-                            ($invoice['status'] === 'sent' ? 'info' : 'secondary')); 
-                    ?>">
-                        <?php echo ucfirst($invoice['status']); ?>
+                    <span class="badge badge-<?php
+                                                echo $invoice['status'] === 'paid' ? 'success' : ($invoice['status'] === 'overdue' ? 'danger' : ($invoice['status'] === 'sent' ? 'info' : ($invoice['status'] === 'partially_paid' ? 'warning' : 'secondary')));
+                                                ?>">
+                        <?php echo ucwords(str_replace('_', ' ', $invoice['status'])); ?>
                     </span>
                 </div>
             </div>
         </div>
-        
+
         <div class="invoice-body">
             <div class="invoice-row">
                 <div class="invoice-section">
@@ -177,7 +199,7 @@ $currency = getSetting('currency', 'INR');
                         <?php endif; ?>
                     </div>
                 </div>
-                
+
                 <div class="invoice-section">
                     <h3>Bill To:</h3>
                     <div>
@@ -194,17 +216,21 @@ $currency = getSetting('currency', 'INR');
                     </div>
                 </div>
             </div>
-            
+
             <div class="invoice-section">
                 <h3>Booking Details:</h3>
                 <div style="margin-bottom: 20px;">
                     <strong>Booking Number:</strong> <?php echo htmlspecialchars($invoice['booking_number']); ?><br>
                     <strong>Vehicle:</strong> <?php echo htmlspecialchars($invoice['vehicle_name']); ?> (<?php echo htmlspecialchars($invoice['registration_number']); ?>)<br>
                     <strong>Rental Period:</strong> <?php echo formatDate($invoice['start_date']); ?> to <?php echo formatDate($invoice['end_date']); ?><br>
-                    <strong>Total Days:</strong> <?php echo $invoice['total_days']; ?> days
+                    <strong>Total Days:</strong> <?php echo $invoice['total_days']; ?> days<br>
+                    <div style="margin-top: 10px; padding: 8px; background: #f0fdf4; border-left: 4px solid #16a34a; font-size: 0.85rem;">
+                        <i class="icon icon-success"></i> <strong>Payment Status:</strong>
+                        <?php echo $invoice['total_amount'] <= $invoice['paid_amount'] ? 'Fully Matched' : 'Pending Verification'; ?>
+                    </div>
                 </div>
             </div>
-            
+
             <table class="invoice-table">
                 <thead>
                     <tr>
@@ -231,7 +257,7 @@ $currency = getSetting('currency', 'INR');
                     <?php endif; ?>
                 </tbody>
             </table>
-            
+
             <div class="invoice-totals">
                 <table>
                     <tr>
@@ -266,7 +292,7 @@ $currency = getSetting('currency', 'INR');
                     </tr>
                 </table>
             </div>
-            
+
             <?php if ($invoice['notes']): ?>
                 <div style="margin-top: 30px; padding: 15px; background: var(--bg-secondary); border-radius: var(--radius);">
                     <strong>Notes:</strong>
@@ -274,12 +300,12 @@ $currency = getSetting('currency', 'INR');
                 </div>
             <?php endif; ?>
         </div>
-        
+
         <div class="invoice-footer">
             <p>Thank you for your business!</p>
             <p>This is a computer-generated invoice. No signature required.</p>
         </div>
     </div>
 </body>
-</html>
 
+</html>
