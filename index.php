@@ -18,7 +18,7 @@ $error = '';
 $success = '';
 
 // Handle login form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
     $username = sanitize($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
@@ -74,6 +74,7 @@ $success = $success ?: getFlashMessage('success');
             <?php endif; ?>
 
             <form method="POST" action="" data-validate>
+                <input type="hidden" name="login" value="1">
                 <div class="form-group">
                     <label class="form-label required" for="username">Username or Email</label>
                     <input type="text"
