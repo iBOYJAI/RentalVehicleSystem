@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Customer "My Bookings" Page
  * Allows customers to view and create their own bookings
@@ -62,7 +63,14 @@ if (!$customerId) {
         $endDate = sanitize($_POST['end_date']);
         $pickupLocation = sanitize($_POST['pickup_location'] ?? '');
         $dropoffLocation = sanitize($_POST['dropoff_location'] ?? '');
+        $paymentMethod = sanitize($_POST['payment_method'] ?? 'cash');
         $notes = sanitize($_POST['notes'] ?? '');
+
+        if ($paymentMethod === 'cash') {
+            $notes = "[Payment: Cash/Hand] " . $notes;
+        } else {
+            $notes = "[Payment: Online] " . $notes;
+        }
 
         // Basic validation
         if (!$vehicleId || !$startDate || !$endDate) {
@@ -104,9 +112,20 @@ if (!$customerId) {
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([
-                $bookingNumber, $customerId, $vehicleId, $startDate, $endDate,
-                $pickupLocation, $dropoffLocation, $dailyRate, $cost['total_days'],
-                $cost['subtotal'], $cost['tax'], $cost['total_amount'], $notes, BOOKING_PENDING
+                $bookingNumber,
+                $customerId,
+                $vehicleId,
+                $startDate,
+                $endDate,
+                $pickupLocation,
+                $dropoffLocation,
+                $dailyRate,
+                $cost['total_days'],
+                $cost['subtotal'],
+                $cost['tax'],
+                $cost['total_amount'],
+                $notes,
+                BOOKING_PENDING
             ]);
 
             setFlashMessage('success', 'Booking request submitted successfully! It will be reviewed by the team.');
@@ -221,6 +240,14 @@ if ($successMsg): ?>
                         </div>
 
                         <div class="form-group" style="grid-column: 1 / -1;">
+                            <label class="form-label required" for="payment_method">Payment Method</label>
+                            <select class="form-control" id="payment_method" name="payment_method" required>
+                                <option value="cash">Hand / Offline Payment (Pay at Store)</option>
+                                <option value="online">Online Payment</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="grid-column: 1 / -1;">
                             <label class="form-label" for="notes">Notes</label>
                             <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Any special instructions or notes"></textarea>
                         </div>
@@ -254,21 +281,34 @@ if ($successMsg): ?>
                 </form>
 
                 <script>
-                document.getElementById('vehicle_id').addEventListener('change', function() {
-                    const option = this.options[this.selectedIndex];
-                    const rate = option.getAttribute('data-rate') || 0;
-                    document.getElementById('daily_rate').value = rate;
-                    document.getElementById('display_daily_rate').textContent = formatCurrency(rate);
-                    calculateRentalCost(document.querySelector('form[data-rental-calc]'));
-                });
+                    document.getElementById('vehicle_id').addEventListener('change', function() {
+                        const option = this.options[this.selectedIndex];
+                        const rate = option.getAttribute('data-rate') || 0;
+                        document.getElementById('daily_rate').value = rate;
+                        document.getElementById('display_daily_rate').textContent = formatCurrency(rate);
+                        calculateRentalCost(document.querySelector('form[data-rental-calc]'));
+                    });
 
-                document.getElementById('start_date').addEventListener('change', function() {
-                    calculateRentalCost(document.querySelector('form[data-rental-calc]'));
-                });
+                    document.getElementById('start_date').addEventListener('change', function() {
+                        calculateRentalCost(document.querySelector('form[data-rental-calc]'));
+                    });
 
-                document.getElementById('end_date').addEventListener('change', function() {
-                    calculateRentalCost(document.querySelector('form[data-rental-calc]'));
-                });
+                    document.getElementById('end_date').addEventListener('change', function() {
+                        calculateRentalCost(document.querySelector('form[data-rental-calc]'));
+                    });
+
+                    // Handle pre-selected vehicle
+                    window.addEventListener('load', function() {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const vehicleId = urlParams.get('vehicle_id');
+                        if (vehicleId) {
+                            const select = document.getElementById('vehicle_id');
+                            select.value = vehicleId;
+                            // Trigger change event to update rates
+                            const event = new Event('change');
+                            select.dispatchEvent(event);
+                        }
+                    });
                 </script>
             <?php endif; ?>
         </div>
@@ -306,12 +346,9 @@ if ($successMsg): ?>
                                     <td><?php echo formatDate($booking['start_date']); ?> - <?php echo formatDate($booking['end_date']); ?></td>
                                     <td><?php echo formatCurrency($booking['total_amount']); ?></td>
                                     <td>
-                                        <span class="badge badge-<?php 
-                                            echo $booking['status'] === BOOKING_APPROVED ? 'success' : 
-                                                ($booking['status'] === BOOKING_PENDING ? 'warning' : 
-                                                ($booking['status'] === BOOKING_ACTIVE ? 'info' : 
-                                                ($booking['status'] === BOOKING_COMPLETED ? 'primary' : 'secondary'))); 
-                                        ?>">
+                                        <span class="badge badge-<?php
+                                                                    echo $booking['status'] === BOOKING_APPROVED ? 'success' : ($booking['status'] === BOOKING_PENDING ? 'warning' : ($booking['status'] === BOOKING_ACTIVE ? 'info' : ($booking['status'] === BOOKING_COMPLETED ? 'primary' : 'secondary')));
+                                                                    ?>">
                                             <?php echo ucfirst($booking['status']); ?>
                                         </span>
                                     </td>
@@ -326,5 +363,3 @@ if ($successMsg): ?>
 <?php endif; ?>
 
 <?php include '../includes/footer.php'; ?>
-
-

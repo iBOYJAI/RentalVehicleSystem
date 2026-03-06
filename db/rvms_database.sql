@@ -223,6 +223,10 @@ INSERT INTO users (username, email, password, full_name, role, phone, status) VA
 INSERT INTO users (username, email, password, full_name, role, phone, status) VALUES
 ('staff', 'staff@rvms.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Staff Member', 'staff', '1234567891', 'active');
 
+-- Insert Default Customer User
+INSERT INTO users (username, email, password, full_name, role, phone, status) VALUES
+('customer', 'customer@rvms.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Sample Customer', 'customer', '1234567892', 'active');
+
 -- Insert Vehicle Categories
 INSERT INTO categories (name, description, icon, status) VALUES
 ('Car', 'Sedan, Hatchback, SUV cars', 'car', 'active'),
